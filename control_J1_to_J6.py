@@ -1,6 +1,6 @@
 from scipy.interpolate import interp1d
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import pandas as pd
 import time
 import bcapclient
@@ -23,21 +23,10 @@ def get_interpolate_data(x, y, num, kind):
     x_new = np.linspace(0, np.pi, num=num)[::-1]
     x_new = np.min(x) + (1 + np.cos(x_new)) * (np.max(x) - np.min(x)) /2
     y_new = f_CS(x_new)
-    return x_new, y_new
+    return np.round(x_new,2), np.round(y_new,2)
 
 def get_move_pos(x,y,J_num,num):
-    if J_num==1:
-        x[0]=y[num]
-    elif J_num == 2:
-        x[1]=y[num]
-    elif J_num == 3:
-        x[2]=y[num]
-    elif J_num == 4:
-        x[3]=y[num]
-    elif J_num == 5:
-        x[4]=y[num]
-    elif J_num == 6:
-        x[5]=y[num]
+    x[J_num-1]=str(y[num])
     return x
 
 
@@ -52,18 +41,12 @@ f.close()
 '数値データに変換'
 y = list(map(float,y))
 '始点から終点まで何点で表すか'
-num = 100
+num =500 
 '3次スプライン補間'
 kind = "cubic"
-print(y)
 '関数実行'
 x_new, y_new = get_interpolate_data(x, y, num, kind)
-print(y_new)
-'''
-'画像保存'
-plt.plot(x, y,'o',x_new,y_new,'+')
-plt.show()
-'''
+
 
 
 ###接続処理 TCP
@@ -101,9 +84,9 @@ print("Motor On")
 
 ###ExtSpeed,Accel,Decel設定
 Command = "ExtSpeed"
-Speed = 20
-Accel = 25
-Decel = 25
+Speed = 30
+Accel = 10
+Decel = 10
 Param = [Speed,Accel,Decel]
 m_bcapclient.robot_execute(HRobot,Command,Param)
 print("ExtSpeed")
@@ -120,106 +103,111 @@ time.sleep(1)
 ###Slave move: Change return format
 Command = "slvRecvFormat"
 # Param = 0x0001  # Change the format to position
-Param = 0x0014  # hex(10): timestamp, hex(1): [pose, joint]
+#Param = 0x0014  # hex(10): timestamp, hex(1): [pose, joint]
+Param = 0x0002  # hex(10): timestamp, hex(1): [pose, joint]
 m_bcapclient.robot_execute(HRobot, Command, Param)
 print("slvMove Format Change" + Command + ":" + str(Param))
 
 ###Slave move: Change mode
 Command = "slvChangeMode"
-Param = 0x101  # Type P, mode 1 (overwrite the destination)  
+#Param = 0x101  # Type P, mode 1 (overwrite the destination)  
 # Param = 0x001  # Type P, mode 0 (buffer the destination)  
-# Param = 0x102  # Type J, mode 1 (overwrite the joint)  
+#Param = 0x002  # Type J, mode 0 (overwrite the joint)
+Param = 0x102  # Type J, mode 1 (buffer the joint)  
 m_bcapclient.robot_execute(HRobot, Command, Param)
 print("slvMove Format Change" + Command + ":" + str(Param))
 
 
 ###Send POS slvMove
 Command = "slvMove"
-LoopNum = 100
-
+LoopNum = num-1
+Pos_value = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 J_num = 1
+cnt1 = 0.005
+cnt2 = 0.007
 for num in range(LoopNum):
-    Pos_value = get_move_pos(Pos_value,y_new,J_num,num)
+    x = get_move_pos(Pos_value,y_new,J_num,num)
+    print(Pos_value)
     ret = m_bcapclient.robot_execute(HRobot,Command,Pos_value)
-    #print(ret)
-    print("time:" + str(ret[0]))
-    print("pos P,J:" + str(ret[1]))
-    time.sleep(0.005)
+    print(ret)
+    #print(time : ret[0]))
+    #print("pos P,J:" + str(ret[1]))
+    time.sleep(cnt1)
 for num in range(LoopNum):
     Pos_value =  get_move_pos(Pos_value,y_new,J_num,LoopNum-num)
     ret = m_bcapclient.robot_execute(HRobot,Command,Pos_value)
-    #print(ret)
-    print("time:" + str(ret[0]))
-    print("pos P,J:" + str(ret[1]))
-    time.sleep(0.005)
+    print(ret)
+    #print("time:" + str(ret[0]))
+    #print("pos P,J:" + str(ret[1]))
+    time.sleep(cnt1)
 
 J_num = 2
 for num in range(LoopNum):
     Pos_value = get_move_pos(Pos_value,y_new,J_num,num)
     ret = m_bcapclient.robot_execute(HRobot,Command,Pos_value)
-    #print(ret)
-    print("time:" + str(ret[0]))
-    print("pos P,J:" + str(ret[1]))
-    time.sleep(0.005)
+    print(ret)
+    #print("time:" + str(ret[0]))
+    #print("pos P,J:" + str(ret[1]))
+    time.sleep(cnt2)
 for num in range(LoopNum):
     Pos_value =  get_move_pos(Pos_value,y_new,J_num,LoopNum-num)
     ret = m_bcapclient.robot_execute(HRobot,Command,Pos_value)
-    #print(ret)
-    print("time:" + str(ret[0]))
-    print("pos P,J:" + str(ret[1]))
-    time.sleep(0.005)
+    print(ret)
+    #print("time:" + str(ret[0]))
+    #print("pos P,J:" + str(ret[1]))
+    time.sleep(cnt2)
 
 J_num = 3
 for num in range(LoopNum):
     Pos_value = get_move_pos(Pos_value,y_new,J_num,num)
     ret = m_bcapclient.robot_execute(HRobot,Command,Pos_value)
-    #print(ret)
-    print("time:" + str(ret[0]))
-    print("pos P,J:" + str(ret[1]))
-    time.sleep(0.005)
+    print(ret)
+    #print("time:" + str(ret[0]))
+    #print("pos P,J:" + str(ret[1]))
+    time.sleep(cnt2)
 
 
 J_num = 4
 for num in range(LoopNum):
     Pos_value = get_move_pos(Pos_value,y_new,J_num,num)
     ret = m_bcapclient.robot_execute(HRobot,Command,Pos_value)
-    #print(ret)
-    print("time:" + str(ret[0]))
-    print("pos P,J:" + str(ret[1]))
-    time.sleep(0.005)
+    print(ret)
+    #print("time:" + str(ret[0]))
+    #print("pos P,J:" + str(ret[1]))
+    time.sleep(cnt1)
 for num in range(LoopNum):
     Pos_value =  get_move_pos(Pos_value,y_new,J_num,LoopNum-num)
     ret = m_bcapclient.robot_execute(HRobot,Command,Pos_value)
-    #print(ret)
-    print("time:" + str(ret[0]))
-    print("pos P,J:" + str(ret[1]))
-    time.sleep(0.005)
+    print(ret)
+    #print("time:" + str(ret[0]))
+    #print("pos P,J:" + str(ret[1]))
+    time.sleep(cnt1)
 
 J_num = 5
 for num in range(LoopNum):
     Pos_value = get_move_pos(Pos_value,y_new,J_num,num)
     ret = m_bcapclient.robot_execute(HRobot,Command,Pos_value)
-    #print(ret)
-    print("time:" + str(ret[0]))
-    print("pos P,J:" + str(ret[1]))
-    time.sleep(0.005)
+    print(ret)
+    #print("time:" + str(ret[0]))
+    #print("pos P,J:" + str(ret[1]))
+    time.sleep(cnt2)
 
 
 J_num = 6
 for num in range(LoopNum):
     Pos_value = get_move_pos(Pos_value,y_new,J_num,num)
     ret = m_bcapclient.robot_execute(HRobot,Command,Pos_value)
-    #print(ret)
-    print("time:" + str(ret[0]))
-    print("pos P,J:" + str(ret[1]))
-    time.sleep(0.005)
+    print(ret)
+    #print("time:" + str(ret[0]))
+    #print("pos P,J:" + str(ret[1]))
+    time.sleep(cnt1)
 for num in range(LoopNum):
     Pos_value =  get_move_pos(Pos_value,y_new,J_num,LoopNum-num)
     ret = m_bcapclient.robot_execute(HRobot,Command,Pos_value)
-    #print(ret)
-    print("time:" + str(ret[0]))
-    print("pos P,J:" + str(ret[1]))
-    time.sleep(0.005)
+    print(ret)
+    #print("time:" + str(ret[0]))
+    #print("pos P,J:" + str(ret[1]))
+    time.sleep(cnt1)
 
 
 ###Slave move: Change mode
@@ -227,6 +215,7 @@ Command = "slvChangeMode"
 Param = 0x000  # finish Slave Move  
 m_bcapclient.robot_execute(HRobot, Command, Param)
 print("slvMove Format Change" + Command + ":" + str(Param))
+time.sleep(3)
 
 ###Motor Off
 Command = "Motor"
