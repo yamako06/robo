@@ -7,7 +7,7 @@
 # https://github.com/DENSORobot/orin_bcap
 
 #import pybcapclient.bcapclient as bcapclient
-#import bcapclient
+import bcapclient
 import time
 from scipy.interpolate import interp1d
 import numpy as np
@@ -25,16 +25,45 @@ J4=[]
 J5=[]
 J6=[]
 Pos_value=[0,0,0,0,0,0]
+Delay_300=[6,12,19,22,34,42,46,56,61,67,70,73,81,84,92,126,140,171,175,177,187]
+Delay_400=[158,160,162]
+Delay_500=[29,59,101,103,105,121,128,133,182,193,198]
+Delay_600=[75]
+Delay_1000=[2,31,87,89,136,142,148,156,164,166,189,194]
+Delay_2000=[78,95,119,120,154,167]
 
 ###座標格納関数
-def get_move_pos(J_pos,J1,J2,J3,J4,J5,J6,Position):
-    J_pos[0]=J1[Loopnum]
-    J_pos[1]=J2[Loopnum]
-    J_pos[2]=J3[Loopnum]
-    J_pos[3]=J4[Loopnum]
-    J_pos[4]=J5[Loopnum]
-    J_pos[5]=J6[Loopnum]
+def get_move_pos(J_pos,J1,J2,J3,J4,J5,J6,P):
+    J_pos[0]=J1[P-1]
+    J_pos[1]=J2[P-1]
+    J_pos[2]=J3[P-1]
+    J_pos[3]=J4[P-1]
+    J_pos[4]=J5[P-1]
+    J_pos[5]=J6[P-1]
     return J_pos
+
+
+###ロボット制御用関数
+def robot_cont(Command,Speed,Accel,Decel,Comp,Pos_value,Mode1,Mode2):
+    ### set ExtSpeed,Accel,Decel
+    if Command==1:
+        Command = "ExtSpeed"
+    #Speed = 20
+    #Accel = 25
+    #Decel = 25
+    Param = [Speed,Accel,Decel]
+    m_bcapclient.robot_execute(HRobot,Command,Param)
+    print("ExtSpeed")
+    ### Move Position
+    #Comp=1
+    Pos_value = [0.0 , 0.0 , 90.0 , 0.0 , 90.0 , 0.0]
+    if Mode1==1:
+        Mode1 = "J"
+    if Mode2==1:
+        Mode2 = "@E"
+    Pose = [Pos_value,Mode1,Mode2]
+    m_bcapclient.robot_move(HRobot,Comp,Pose,"")
+    print("Complete Move:",Pos_value)
 
 ###入力データ
 csvfile = 'SRC_J.csv'
@@ -61,10 +90,7 @@ J4=list(map(float, J4))
 J5=list(map(float, J5))
 J6=list(map(float, J6))
 
-###座標の設定は引数8番目の変える（P8なら8にする）
-Pos_value = get_move_pos(Pos_value,J1,J2,J3,J4,J5,J6,1)
-
-
+#--------------------------------前処理--------------------------------#
 ### set IP Address , Port number and Timeout of connected RC8
 host = "192.168.0.1"
 port = 5007
@@ -103,23 +129,29 @@ Param = [1,0]
 m_bcapclient.robot_execute(HRobot,Command,Param)
 print("Motor On")
 
-### Move Initialize Position
-Comp=1
-Pos_value = [0.0 , 0.0 , 90.0 , 0.0 , 90.0 , 0.0]
-Pose = [Pos_value,"J","@E"]
-m_bcapclient.robot_move(HRobot,Comp,Pose,"")
-print("Complete Move P,@E J(0.0, 0.0, 90.0, 0.0, 90.0, 0.0)")
-time.sleep(1)
+#--------------------------------ロボット動作--------------------------------#
 
-### set ExtSpeed,Accel,Decel
-Command = "ExtSpeed"
-Speed = 20
-Accel = 25
-Decel = 25
-Param = [Speed,Accel,Decel]
-m_bcapclient.robot_execute(HRobot,Command,Param)
-print("ExtSpeed")
+for i in range(1,200):
+    ###座標の設定は引数8番目の変える（P8なら8にする、SRC_組立動作(J型)フローのNo8に対応）
+    Pos_value = get_move_pos(Pos_value,J1,J2,J3,J4,J5,J6,i)
+    robot_cont(1,20,25,25,1,Pos_value,1,1)
+    if i in Delay_300:
+        delay=0.3
+    elif i in Delay_400:
+        delay=0.4 
+    elif i in Delay_500:
+        delay=0.5 
+    elif i in Delay_600:
+        delay=0.6 
+    elif i in Delay_1000:
+        delay=1 
+    elif i in Delay_2000:
+        delay=2 
+    else:
+        delay=0.1
+    time.sleep(delay)
 
+#--------------------------------後処理--------------------------------#
 ###Motor Off
 Command = "Motor"
 Param = [0,0]
@@ -132,8 +164,6 @@ Param = None
 m_bcapclient.robot_execute(HRobot,Command,Param)
 print("GiveArm")
 
-
-
 ### Release Handle and Disconnect
 if HRobot != 0:
     m_bcapclient.robot_release(HRobot)
@@ -142,11 +172,30 @@ if hCtrl != 0:
     m_bcapclient.controller_disconnect(hCtrl)
     print("Release Controller")
 
-
-
 ### b-cap service stop
 m_bcapclient.service_stop()
 print("b-cap service Stop")
 
 del m_bcapclient
+
 print("Finish")
+
+"""サンプル
+### set ExtSpeed,Accel,Decel
+Command = "ExtSpeed"
+Speed = 20
+Accel = 25
+Decel = 25
+Param = [Speed,Accel,Decel]
+m_bcapclient.robot_execute(HRobot,Command,Param)
+print("ExtSpeed")
+
+
+### Move Initialize Position
+Comp=1
+Pos_value = [0.0 , 0.0 , 90.0 , 0.0 , 90.0 , 0.0]
+Pose = [Pos_value,"J","@E"]
+m_bcapclient.robot_move(HRobot,Comp,Pose,"")
+print("Complete Move P,@E J(0.0, 0.0, 90.0, 0.0, 90.0, 0.0)")
+
+"""
