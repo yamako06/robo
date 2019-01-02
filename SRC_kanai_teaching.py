@@ -1,8 +1,4 @@
 # -*- coding:utf-8 -*-
-
-# Sample program
-# b-cap slave mode 
-
 #b-cap Lib URL 
 # https://github.com/DENSORobot/orin_bcap
 
@@ -130,7 +126,6 @@ m_bcapclient.robot_execute(HRobot,Command,Param)
 print("Motor On")
 
 #--------------------------------ロボット動作--------------------------------#
-
 for i in range(1,200):
     ###座標の設定は引数8番目の変える（P8なら8にする、SRC_組立動作(J型)フローのNo8に対応）
     Pos_value = get_move_pos(Pos_value,J1,J2,J3,J4,J5,J6,i)
