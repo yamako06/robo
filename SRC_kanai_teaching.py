@@ -7,7 +7,7 @@ import bcapclient
 import time
 from scipy.interpolate import interp1d
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import pandas as pd
 import time
 import csv
@@ -27,6 +27,8 @@ Delay_500=[29,59,101,103,105,121,128,133,182,193,198]
 Delay_600=[75]
 Delay_1000=[2,31,87,89,136,142,148,156,164,166,189,194]
 Delay_2000=[78,95,119,120,154,167]
+Pos_Value=[0.0 , 0.0 , 90.0 , 0.0 , 90.0 , 0.0]
+
 
 ###座標格納関数
 def get_move_pos(J_pos,J1,J2,J3,J4,J5,J6,P):
@@ -52,10 +54,11 @@ def robot_cont(Command,Speed,Accel,Decel,Comp,Pos_value,Mode1,Mode2):
     print("ExtSpeed")
     ### Move Position
     #Comp=1
-    Pos_value = [0.0 , 0.0 , 90.0 , 0.0 , 90.0 , 0.0]
     if Mode1==1:
         Mode1 = "J"
     if Mode2==1:
+        Mode2 = "@P"
+    elif Mode == 2:
         Mode2 = "@E"
     Pose = [Pos_value,Mode1,Mode2]
     m_bcapclient.robot_move(HRobot,Comp,Pose,"")
@@ -126,10 +129,14 @@ m_bcapclient.robot_execute(HRobot,Command,Param)
 print("Motor On")
 
 #--------------------------------ロボット動作--------------------------------#
-for i in range(1,200):
+for i in range(1,201):
     ###座標の設定は引数8番目の変える（P8なら8にする、SRC_組立動作(J型)フローのNo8に対応）
     Pos_value = get_move_pos(Pos_value,J1,J2,J3,J4,J5,J6,i)
-    robot_cont(1,20,25,25,1,Pos_value,1,1)
+    if i == 201:
+        robot_cont(1,50,25,25,1,Pos_value,1,2)
+    else:
+        robot_cont(1,50,25,25,1,Pos_value,1,1)
+    #time.sleep(0.5)
     if i in Delay_300:
         delay=0.3
     elif i in Delay_400:
@@ -143,7 +150,7 @@ for i in range(1,200):
     elif i in Delay_2000:
         delay=2 
     else:
-        delay=0.1
+        delay=0
     time.sleep(delay)
 
 #--------------------------------後処理--------------------------------#
@@ -174,6 +181,7 @@ print("b-cap service Stop")
 del m_bcapclient
 
 print("Finish")
+
 
 """サンプル
 ### set ExtSpeed,Accel,Decel

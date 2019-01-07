@@ -3,7 +3,7 @@ import numpy as np
 #import matplotlib.pyplot as plt
 import pandas as pd
 import time
-#import bcapclient
+import bcapclient
 import csv
 
 ###変数
@@ -45,7 +45,7 @@ y = list(map(float,y))
 for i in range(len(y)):
     x.append(i)
 '始点から終点まで何点で表すか'
-num =500 
+num =2000 
 '3次スプライン補間'
 kind = "cubic"
 '関数実行'
@@ -125,9 +125,9 @@ writer = csv.writer(f, lineterminator='\n')
 
 for J_num in range(1,7):
     if J_num == 1 or J_num == 4 or J_num == 6:
-        cnt = 0.005
+        cnt = 0.0009
     else:
-        cnt = 0.007
+        cnt = 0.0001
     for num in range(LoopNum):
         Pos_value = get_move_pos(Pos_value,y_new,J_num,num)
         writer.writerow(Pos_value)
